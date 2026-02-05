@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"strconv"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -17,44 +16,13 @@ type AdData struct {
 }
 
 var (
-	botToken = "8467228808:AAFECOp5yEOtryP8X5Gk2codpJAWtCE0dp0"
+	botToken = "8534860816:AAHybGqTACVQ48gFG5fKBkxEhBtDHBSRid0"
 	adminID  = int64(7518992824)
 
-	channels      = make(map[int64]string) // Majburiy obuna kanallari
-	userRequests  = make(map[int64]map[int64]bool)
-	adminState    = make(map[int64]string)
-	tempChannelID = make(map[int64]int64)
-	userAdData    = make(map[int64]*AdData)
+	adminState = make(map[int64]string)
+	userAdData = make(map[int64]*AdData)
+	channels   = make(map[int64]string)
 )
-
-// Majburiy obunani tekshirish
-func hasSentAllRequests(userID int64) bool {
-	if len(channels) == 0 {
-		return true
-	}
-	for cID := range channels {
-		if userRequests[userID] == nil || !userRequests[userID][cID] {
-			return false
-		}
-	}
-	return true
-}
-
-func getMainMenu(userID int64) tgbotapi.ReplyKeyboardMarkup {
-	row1 := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("📣 Reklama tayyorlash"))
-	keyboard := tgbotapi.NewReplyKeyboard(row1)
-	if userID == adminID {
-		row2 := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("➕ Kanal qo'shish"))
-		keyboard.Keyboard = append(keyboard.Keyboard, row2)
-	}
-	return keyboard
-}
-
-func getCancelMenu() tgbotapi.ReplyKeyboardMarkup {
-	return tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("❌ Bekor qilish")),
-	)
-}
 
 func main() {
 	bot, err := tgbotapi.NewBotAPI(botToken)
@@ -62,57 +30,18 @@ func main() {
 		log.Panic(err)
 	}
 	bot.Debug = true
-	log.Println("Bot ishga tushdi...")
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		// Kanalga qo'shilish so'rovini ushlash
-		if update.ChatJoinRequest != nil {
-			uID := update.ChatJoinRequest.From.ID
-			cID := update.ChatJoinRequest.Chat.ID
-
-			// 1. Foydalanuvchi so'rov yuborganini saqlaymiz
-			if userRequests[uID] == nil {
-				userRequests[uID] = make(map[int64]bool)
-			}
-			userRequests[uID][cID] = true
-
-			// 2. SO'ROVNI AVTOMATIK TASDIQLASH (Qabul qilish)
-			approveConfig := tgbotapi.ApproveChatJoinRequestConfig{
-				ChatConfig: tgbotapi.ChatConfig{
-					ChatID: cID,
-				},
-				UserID: uID,
-			}
-
-			_, err := bot.Request(approveConfig)
-			if err != nil {
-				log.Printf("So'rovni tasdiqlashda xato: %v", err)
-			} else {
-				// Foydalanuvchiga xabar yuborish (ixtiyoriy)
-				bot.Send(tgbotapi.NewMessage(uID, "✅ Kanalga so'rovingiz qabul qilindi! Endi botni ishlatishingiz mumkin. /start bosing."))
-			}
-			continue
-		}
-		// Callback tugmalar
 		if update.CallbackQuery != nil {
 			cb := update.CallbackQuery
-
-			if cb.Data == "check_sub" {
-				if hasSentAllRequests(cb.From.ID) {
-					bot.Send(tgbotapi.NewDeleteMessage(cb.Message.Chat.ID, cb.Message.MessageID))
-					bot.Send(tgbotapi.NewMessage(cb.Message.Chat.ID, "✅ So'rovlar aniqlandi! Endi /start bosing."))
-				} else {
-					bot.Request(tgbotapi.NewCallbackWithAlert(cb.ID, "❌ Siz hali barcha kanallarga so'rov yubormagansiz!"))
-				}
-			}
-
 			if cb.Data == "start_sending" {
 				adminState[cb.From.ID] = "wait_target_channel"
-				bot.Send(tgbotapi.NewMessage(cb.Message.Chat.ID, "🔗 Reklama yubormoqchi bo'lgan kanal linkini yuboring (@kanal_nomi):"))
+				msg := tgbotapi.NewMessage(cb.Message.Chat.ID, "🔗 Reklama yubormoqchi bo'lgan kanal linkini yuboring (masalan: @kanal_nomi):")
+				bot.Send(msg)
 				bot.Request(tgbotapi.NewCallback(cb.ID, ""))
 			}
 			continue
@@ -126,47 +55,16 @@ func main() {
 		chatID := update.Message.Chat.ID
 		userID := update.Message.From.ID
 
-		// Majburiy obuna tekshiruvi (Admin uchun istisno)
-		if userID != adminID && !hasSentAllRequests(userID) {
-			var rows [][]tgbotapi.InlineKeyboardButton
-			for _, link := range channels {
-				btn := tgbotapi.NewInlineKeyboardButtonURL("📩 So'rov yuborish", link)
-				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
-			}
-			rows = append(rows, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("🔄 Tekshirish", "check_sub")))
-			msg := tgbotapi.NewMessage(chatID, "🤖 Botdan foydalanish uchun kanallarga so'rov yuboring!")
-			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
-			bot.Send(msg)
-			continue
-		}
-
 		if msgText == "❌ Bekor qilish" {
 			delete(adminState, userID)
-			delete(userAdData, userID)
 			msg := tgbotapi.NewMessage(chatID, "🚫 Bekor qilindi.")
 			msg.ReplyMarkup = getMainMenu(userID)
 			bot.Send(msg)
 			continue
 		}
 
-		// State Machine
 		if state, ok := adminState[userID]; ok {
 			switch state {
-			case "wait_id":
-				id, _ := strconv.ParseInt(msgText, 10, 64)
-				tempChannelID[userID] = id
-				adminState[userID] = "wait_link"
-				bot.Send(tgbotapi.NewMessage(chatID, "🔗 Kanal so'rov linkini yuboring:"))
-				continue
-
-			case "wait_link":
-				channels[tempChannelID[userID]] = msgText
-				delete(adminState, userID)
-				msg := tgbotapi.NewMessage(chatID, "✅ Kanal majburiy obunaga saqlandi!")
-				msg.ReplyMarkup = getMainMenu(userID)
-				bot.Send(msg)
-				continue
-
 			case "wait_media":
 				if update.Message.Photo != nil {
 					photos := update.Message.Photo
@@ -220,7 +118,6 @@ func main() {
 					continue
 				}
 
-				// Bot adminligini tekshirish
 				botMember, err := bot.GetChatMember(tgbotapi.GetChatMemberConfig{
 					ChatConfigWithUser: tgbotapi.ChatConfigWithUser{SuperGroupUsername: targetChat, UserID: bot.Self.ID},
 				})
@@ -229,7 +126,6 @@ func main() {
 					continue
 				}
 
-				// Foydalanuvchi adminligini tekshirish
 				userMember, err := bot.GetChatMember(tgbotapi.GetChatMemberConfig{
 					ChatConfigWithUser: tgbotapi.ChatConfigWithUser{SuperGroupUsername: targetChat, UserID: userID},
 				})
@@ -238,7 +134,7 @@ func main() {
 					delete(adminState, userID)
 					continue
 				}
-				///gvr4thtyjuy
+
 				data := userAdData[userID]
 				btn := tgbotapi.NewInlineKeyboardButtonURL(data.ButtonText, data.AdLink)
 				keyboard := tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(btn))
@@ -266,23 +162,22 @@ func main() {
 
 		switch msgText {
 		case "/start":
-			msg := tgbotapi.NewMessage(chatID, "🚀 Xush kelibsiz!")
+			msg := tgbotapi.NewMessage(chatID, "Xush kelibsiz!")
 			msg.ReplyMarkup = getMainMenu(userID)
 			bot.Send(msg)
-
 		case "📣 Reklama tayyorlash":
 			adminState[userID] = "wait_media"
 			msg := tgbotapi.NewMessage(chatID, "📸 Rasm yoki video yuboring:")
 			msg.ReplyMarkup = getCancelMenu()
 			bot.Send(msg)
-
-		case "➕ Kanal qo'shish":
-			if userID == adminID {
-				adminState[userID] = "wait_id"
-				msg := tgbotapi.NewMessage(chatID, "🆔 Kanal ID raqamini kiriting:")
-				msg.ReplyMarkup = getCancelMenu()
-				bot.Send(msg)
-			}
 		}
 	}
+}
+
+func getMainMenu(userID int64) tgbotapi.ReplyKeyboardMarkup {
+	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("📣 Reklama tayyorlash")))
+}
+
+func getCancelMenu() tgbotapi.ReplyKeyboardMarkup {
+	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("❌ Bekor qilish")))
 }

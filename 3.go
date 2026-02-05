@@ -16,7 +16,7 @@ type AdData struct {
 }
 
 var (
-	botToken = "8534860816:AAHybGqTACVQ48gFG5fKBkxEhBtDHBSRid0"
+	botToken = "8467228808:AAEpZ2_Qt825dnOPNIYBoqAy8OGfeK2Kyrc"
 	adminID  = int64(7518992824)
 
 	adminState = make(map[int64]string)

@@ -238,7 +238,7 @@ func main() {
 					delete(adminState, userID)
 					continue
 				}
-
+				///gvr4thtyjuy
 				data := userAdData[userID]
 				btn := tgbotapi.NewInlineKeyboardButtonURL(data.ButtonText, data.AdLink)
 				keyboard := tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(btn))

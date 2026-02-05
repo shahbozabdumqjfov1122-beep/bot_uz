@@ -73,13 +73,30 @@ func main() {
 		if update.ChatJoinRequest != nil {
 			uID := update.ChatJoinRequest.From.ID
 			cID := update.ChatJoinRequest.Chat.ID
+
+			// 1. Foydalanuvchi so'rov yuborganini saqlaymiz
 			if userRequests[uID] == nil {
 				userRequests[uID] = make(map[int64]bool)
 			}
 			userRequests[uID][cID] = true
+
+			// 2. SO'ROVNI AVTOMATIK TASDIQLASH (Qabul qilish)
+			approveConfig := tgbotapi.ApproveChatJoinRequestConfig{
+				ChatConfig: tgbotapi.ChatConfig{
+					ChatID: cID,
+				},
+				UserID: uID,
+			}
+
+			_, err := bot.Request(approveConfig)
+			if err != nil {
+				log.Printf("So'rovni tasdiqlashda xato: %v", err)
+			} else {
+				// Foydalanuvchiga xabar yuborish (ixtiyoriy)
+				bot.Send(tgbotapi.NewMessage(uID, "✅ Kanalga so'rovingiz qabul qilindi! Endi botni ishlatishingiz mumkin. /start bosing."))
+			}
 			continue
 		}
-
 		// Callback tugmalar
 		if update.CallbackQuery != nil {
 			cb := update.CallbackQuery

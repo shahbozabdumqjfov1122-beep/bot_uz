@@ -17,7 +17,7 @@ type AdData struct {
 }
 
 var (
-	botToken = "8467228808:AAEpZ2_Qt825dnOPNIYBoqAy8OGfeK2Kyrc"
+	botToken = "8467228808:AAHujydgOp1m_xXTlXIUMQXrbGq3S7NsARI"
 	// Eslatma: Bot tokenini xavfsiz joyda saqlash tavsiya etiladi!
 
 	adminState = make(map[int64]string)

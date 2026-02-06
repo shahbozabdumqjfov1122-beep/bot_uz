@@ -17,7 +17,7 @@ type AdData struct {
 }
 
 var (
-	botToken = "8534860816:AAHybGqTACVQ48gFG5fKBkxEhBtDHBSRid0"
+	botToken = "8467228808:AAEpZ2_Qt825dnOPNIYBoqAy8OGfeK2Kyrc"
 	// Eslatma: Bot tokenini xavfsiz joyda saqlash tavsiya etiladi!
 
 	adminState = make(map[int64]string)
@@ -209,7 +209,6 @@ func main() {
 	}
 }
 
-// Tugmalar funksiyalari
 func getMainMenu() tgbotapi.ReplyKeyboardMarkup {
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("📣 Reklama tayyorlash")),

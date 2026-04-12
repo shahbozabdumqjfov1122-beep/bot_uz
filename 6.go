@@ -41,7 +41,7 @@ type AdData struct {
 }
 
 var (
-	botToken     = "8467228808:AAHujydgOp1m_xXTlXIUMQXrbGq3S7NsARI"
+	botToken     = "8467228808:AAHbA7hESQ1WjdEBN6v-QLm0PipXK60PzlA"
 	adminState   = make(map[int64]string)
 	userAdData   = make(map[int64]*AdData)
 	channelLinks = make(map[int64]string)

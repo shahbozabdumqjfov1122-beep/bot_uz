@@ -18,7 +18,7 @@ package main
 //}
 //
 //var (
-//	botToken = "8467228808:AAHujydgOp1m_xXTlXIUMQXrbGq3S7NsARI"
+//	botToken = "8467228808:AAHujydgOp1m_xXTlXIUMQXrbGq3S7NsARIsdvbefdbrgtn"
 //	// Eslatma: Bot tokenini xavfsiz joyda saqlash tavsiya etiladi!
 //
 //	adminState = make(map[int64]string)
